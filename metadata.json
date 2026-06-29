@@ -1,0 +1,6 @@
+{
+  "name": "Retro Arcade Adventure",
+  "description": "A fully playable retro 3D arcade game featuring a billboard camera-facing 2D character with 8-directional movement, custom key bindings, fluid controls, retro graphics, sound generation, and local high scores.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
