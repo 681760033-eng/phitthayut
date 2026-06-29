@@ -27,6 +27,9 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
     experienceNeeded: 100,
     invulnerable: false,
     skillCooldown: 0, // 0 to 1 percentage
+    bossHp: null as number | null,
+    bossMaxHp: 6,
+    bossActive: false,
   });
 
   // Keep logic fast inside a single non-reactive mutable reference block
@@ -202,12 +205,12 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
 
     // 6. Create Billboard 2D Player Mesh
     const playerTexture = textureLoader.load(
-      'https://raw.githubusercontent.com/banyapon/banyapon.github.io/refs/heads/main/studio/images/player.png',
+      'https://res.cloudinary.com/dsucg33fv/image/upload/v1782439980/npc1_pdraha.png',
       (tex) => {
         tex.wrapS = THREE.RepeatWrapping;
         tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(0.25, 0.25); // 4 Columns, 4 Rows
-        tex.offset.set(0, 0.75); // Start on Row 1 (Idle)
+        tex.repeat.set(0.25, 0.50); // 4 Columns, 2 Rows
+        tex.offset.set(0, 0.00); // Start on Row 1 (Standing)
         tex.magFilter = THREE.NearestFilter; // Sharp retro pixels
         tex.minFilter = THREE.NearestFilter;
       }
@@ -246,7 +249,7 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
     );
 
     // Create a Plane mesh that billboards to face the camera manually
-    const playerGeo = new THREE.PlaneGeometry(2.2, 2.2);
+    const playerGeo = new THREE.PlaneGeometry(1.32, 2.2);
     const playerMat = new THREE.MeshBasicMaterial({
       map: playerTexture,
       transparent: true,
@@ -347,11 +350,11 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
     let moveX = 0;
     let moveZ = 0;
 
-    // Support both arrow keys and customizable bindings simultaneously
-    if (state.keysHeld.has(bindings.up) || state.keysHeld.has('arrowup')) moveZ -= 1;
-    if (state.keysHeld.has(bindings.down) || state.keysHeld.has('arrowdown')) moveZ += 1;
-    if (state.keysHeld.has(bindings.left) || state.keysHeld.has('arrowleft')) moveX -= 1;
-    if (state.keysHeld.has(bindings.right) || state.keysHeld.has('arrowright')) moveX += 1;
+    // Support arrow keys, WASD keys, and customizable bindings simultaneously for ultimate responsive play
+    if (state.keysHeld.has(bindings.up) || state.keysHeld.has('arrowup') || state.keysHeld.has('w')) moveZ -= 1;
+    if (state.keysHeld.has(bindings.down) || state.keysHeld.has('arrowdown') || state.keysHeld.has('s')) moveZ += 1;
+    if (state.keysHeld.has(bindings.left) || state.keysHeld.has('arrowleft') || state.keysHeld.has('a')) moveX -= 1;
+    if (state.keysHeld.has(bindings.right) || state.keysHeld.has('arrowright') || state.keysHeld.has('d')) moveX += 1;
 
     // Decide current action state
     const isAttackingNow = Date.now() - p.lastPunchTime < 400;
@@ -387,21 +390,19 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
       }
     }
 
-    // 2. Spritesheet Frame Offsetting Logic
-    // Row 1 (Idle): Row Index 3 (Y-offset 0.75)
-    // Row 2 (Walk): Row Index 2 (Y-offset 0.50)
-    // Row 3 (Attack): Row Index 1 (Y-offset 0.25)
-    // Row 4 (Dance): Row Index 0 (Y-offset 0.00)
-    let rowIdx = 3;
+    // 2. Spritesheet Frame Offsetting Logic (For 2-row full-body spritesheet)
+    // Row 1 (Idle/Dance): Bottom Row (Y-offset 0.00)
+    // Row 2 (Walk/Attack): Top Row (Y-offset 0.50)
+    let vOffset = 0.00;
     let frameFPS = state.spriteFPS;
 
     if (p.currentAction === 'walk') {
-      rowIdx = 2;
+      vOffset = 0.50;
     } else if (p.currentAction === 'attack') {
-      rowIdx = 1;
+      vOffset = 0.50;
       frameFPS = state.spriteFPS * 2.2; // "เล่น Animation ไวขึ้น" - speeds up attack animation
     } else if (p.currentAction === 'dance') {
-      rowIdx = 0;
+      vOffset = 0.00;
     }
 
     state.spriteTimer += dt;
@@ -411,10 +412,10 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
     }
 
     // Update ThreeJS texture offsets
-    three.playerTexture.offset.set(state.spriteFrame * 0.25, rowIdx * 0.25);
+    three.playerTexture.offset.set(state.spriteFrame * 0.25, vOffset);
 
     // Apply facing direction scale flip horizontally
-    three.playerMesh.scale.set(state.facingLeft ? -2.2 : 2.2, 2.2, 1);
+    three.playerMesh.scale.set(state.facingLeft ? -1.0 : 1.0, 1.0, 1);
     three.playerMesh.position.set(p.x, 1.1, p.z);
 
     // Move PointLight with player
@@ -1090,6 +1091,7 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
 
     // 10. Update React state HUD variables
     const skillCooldownLeftPct = Math.min(1.0, (now - p.lastSkillTime) / 3000);
+    const boss = state.enemies.find((e) => e.type === 'boss' && !e.isDying);
     setHudData({
       hp: p.hp,
       maxHp: p.maxHp,
@@ -1099,6 +1101,9 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
       experienceNeeded: p.experienceNeeded,
       invulnerable: p.invulnerableUntil > Date.now(),
       skillCooldown: skillCooldownLeftPct,
+      bossHp: boss ? boss.hp : null,
+      bossMaxHp: boss ? boss.maxHp : 6,
+      bossActive: !!boss,
     });
   };
 
@@ -1705,6 +1710,28 @@ export default function GameCanvas({ settings, onGameOver, onGameComplete, onQui
           </button>
         </div>
       </div>
+
+      {/* Epic Boss HP Bar Overlay */}
+      {hudData.bossActive && hudData.bossHp !== null && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20 w-full max-w-md px-4 pointer-events-none select-none">
+          <div className="bg-slate-950/95 border border-red-500/30 p-3 rounded-2xl backdrop-blur-md shadow-[0_0_15px_rgba(239,68,68,0.2)] flex flex-col gap-1.5 animate-pulse">
+            <div className="flex items-center justify-between text-xs font-black text-red-500 font-mono tracking-widest uppercase">
+              <span className="flex items-center gap-1.5">
+                ⚠️ WARNING: DEMON EMPEROR BOSS
+              </span>
+              <span>HP: {hudData.bossHp} / {hudData.bossMaxHp}</span>
+            </div>
+            
+            {/* Health Bar track */}
+            <div className="w-full bg-slate-900/60 h-2.5 rounded-full overflow-hidden border border-red-950">
+              <div 
+                className="h-full bg-gradient-to-r from-red-600 via-rose-500 to-red-500 transition-all duration-200"
+                style={{ width: `${(hudData.bossHp / hudData.bossMaxHp) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Floating Tactical Touch Controls for touchscreen users */}
       <div className="absolute bottom-6 left-6 right-6 z-20 flex justify-between items-end pointer-events-none select-none md:hidden">

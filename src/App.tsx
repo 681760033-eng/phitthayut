@@ -9,14 +9,14 @@ import { playSound, setAudioSettings } from './components/AudioEngine';
 
 const DEFAULT_SETTINGS: GameSettings = {
   bindings: {
-    up: 'ArrowUp',
-    down: 'ArrowDown',
-    left: 'ArrowLeft',
-    right: 'ArrowRight',
+    up: 'w',
+    down: 's',
+    left: 'a',
+    right: 'd',
     punch: 'p',
     skill: 'o',
   },
-  preset: 'arrows',
+  preset: 'wasd',
   soundEnabled: true,
   soundVolume: 0.5,
   difficulty: 'normal',

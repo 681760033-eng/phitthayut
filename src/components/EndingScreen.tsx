@@ -165,9 +165,8 @@ export default function EndingScreen({ score, level, settings, onQuit }: EndingS
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentLineIdx, isTyping, npcWalking]);
 
-  // Custom visual assets: Player row is Idle (Row 3, Y-offset 75%)
-  // NPC spritesheet: uses npc1_pdraha.png (2 rows: Row 1 stand, Row 2 walk)
-  const playerYOffset = 3 * 25; // Row 3
+  // Player and NPC spritesheets: use npc1_pdraha.png (2 rows: Row 1 stand (50%), Row 2 walk (0%))
+  const playerYOffset = 50; // Row 1 (standing)
   const npcYOffset = npcWalking ? 0 : 50; // Row 2 for walk, Row 1 for stand/idle
 
   return (
@@ -200,12 +199,13 @@ export default function EndingScreen({ score, level, settings, onQuit }: EndingS
               style={{ transform: 'translateX(-50%)' }}
             >
               <div 
-                className="w-24 h-24 bg-no-repeat transition-transform duration-200"
+                className="w-14 h-24 bg-no-repeat transition-transform duration-200"
                 style={{
-                  backgroundImage: `url('https://raw.githubusercontent.com/banyapon/banyapon.github.io/refs/heads/main/studio/images/player.png')`,
-                  backgroundSize: '400% 400%',
+                  backgroundImage: `url('https://res.cloudinary.com/dsucg33fv/image/upload/v1782439980/npc1_pdraha.png')`,
+                  backgroundSize: '400% 200%',
                   backgroundPosition: `${playerFrame * 25}% ${playerYOffset}%`,
                   imageRendering: 'pixelated',
+                  filter: 'hue-rotate(130deg)', // Heroic blue/purple adventurer outfit
                 }}
               />
               <span className="mt-2 text-xs font-mono font-bold text-cyan-400 bg-cyan-950/80 border border-cyan-800/60 px-2 py-0.5 rounded-md shadow-md uppercase tracking-wider">
@@ -222,7 +222,7 @@ export default function EndingScreen({ score, level, settings, onQuit }: EndingS
               }}
             >
               <div 
-                className="w-24 h-24 bg-no-repeat transform -scale-x-100" // face left towards player
+                className="w-14 h-24 bg-no-repeat transform -scale-x-100" // face left towards player
                 style={{
                   backgroundImage: `url('https://res.cloudinary.com/dsucg33fv/image/upload/v1782439980/npc1_pdraha.png')`,
                   backgroundSize: '400% 200%',
